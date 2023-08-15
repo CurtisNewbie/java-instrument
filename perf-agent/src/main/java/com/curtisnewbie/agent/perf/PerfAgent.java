@@ -69,7 +69,7 @@ public class PerfAgent {
             if (took >= THRESHOLD) {
                 Object[] copy = new Object[args.length];
                 for (int i = 0; i < args.length; i++) {
-                    if (args[i] != null && !isPrimitive(args[i].getClass())) {
+                    if (args[i] != null && !(args[i] instanceof Class) && !isPrimitive(args[i].getClass())) {
                         copy[i] = args[i].getClass().getName();
                     } else {
                         copy[i] = args[i];

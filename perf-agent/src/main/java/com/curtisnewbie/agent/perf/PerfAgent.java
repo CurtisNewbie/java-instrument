@@ -61,18 +61,21 @@ public class PerfAgent {
         }
 
         @Advice.OnMethodExit
-        static void exit(@Advice.Enter long time, @Advice.Origin String origin, @Advice.AllArguments(typing = Assigner.Typing.DYNAMIC) Object[] args) {
+        static void exit(@Advice.Enter long time, @Advice.Origin String origin, @Advice.AllArguments() Object[] args) {
             if (!Thread.currentThread().getName().equalsIgnoreCase("main"))
                 return;
 
             long took = (System.nanoTime() - time);
             if (took >= THRESHOLD) {
+                Object[] copy = new Object[args.length];
                 for (int i = 0; i < args.length; i++) {
                     if (args[i] != null && !isPrimitive(args[i].getClass())) {
-                        args[i] = args[i].getClass().getName();
+                        copy[i] = args[i].getClass().getName();
+                    } else {
+                        copy[i] = args[i];
                     }
                 }
-                System.out.printf("Perf, %d, %s %s, %d, ms\n", depth.get(), origin, Arrays.toString(args), took / UNIT);
+                System.out.printf("Perf, %d, %s %s, %d, ms\n", depth.get(), origin, Arrays.toString(copy), took / UNIT);
             }
             depth.set(depth.get() - 1);
         }

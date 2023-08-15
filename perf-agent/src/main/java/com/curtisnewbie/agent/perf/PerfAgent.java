@@ -2,7 +2,6 @@ package com.curtisnewbie.agent.perf;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.asm.Advice;
-import net.bytebuddy.implementation.bytecode.assign.Assigner;
 
 import java.lang.instrument.Instrumentation;
 import java.util.Arrays;
@@ -10,6 +9,8 @@ import java.util.Arrays;
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
 /**
+ * This has huge performance impact, the benchmark was simply not reliable, unless we specify the method precisely
+ *
  * @author yongj.zhuang
  */
 public class PerfAgent {
@@ -49,7 +50,7 @@ public class PerfAgent {
         public static ThreadLocal<Integer> depth = ThreadLocal.withInitial(() -> 0);
         public static final long UNIT = 1000_000L;
         public static final long THRESHOLD = 1_000_000_000L;
-//        static final long THRESHOLD = 0L;
+
 
         @Advice.OnMethodEnter
         static long enter() {

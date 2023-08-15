@@ -33,9 +33,8 @@ public class PerfAgent {
 
     static class TimingAdvice {
 
-        static final long SEC = 1000_000_000L;
-        static final long THRESHOLD = SEC;
-        static final boolean logAny = false;
+        static final long UNIT = 1000_000L;
+        static final long THRESHOLD = 500_000_000L;
 
         @Advice.OnMethodEnter
         static long enter() {
@@ -47,15 +46,9 @@ public class PerfAgent {
             if (!Thread.currentThread().getName().equalsIgnoreCase("main"))
                 return;
 
-            if (logAny) {
-                long took = (System.nanoTime() - time);
-                System.out.printf("Perf - %s ->> %s took %s ns\n", Thread.currentThread().getName(), origin, took);
-                return;
-            }
-
             long took = (System.nanoTime() - time);
             if (took > THRESHOLD) {
-                System.out.printf("Perf - %s ->> %s took %s seconds\n", Thread.currentThread().getName(), origin, took / SEC);
+                System.out.printf("Perf, %s, %s, ms\n", origin, took / UNIT);
             }
         }
     }

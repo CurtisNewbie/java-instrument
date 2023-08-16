@@ -10,8 +10,6 @@ import java.lang.instrument.Instrumentation;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
@@ -89,6 +87,10 @@ public class PerfAgent {
         @Advice.OnMethodExit
         static void exit(@Advice.Enter long time, @Advice.Origin String origin, @Advice.AllArguments() Object[] args) {
             long took = (System.nanoTime() - time);
+            if (took < 300 * UNIT) {
+                return;
+            }
+
             Object[] copy = new Object[args.length];
             for (int i = 0; i < args.length; i++) {
                 if (args[i] != null && !(args[i] instanceof Class) && !isPrimitive(args[i].getClass())) {
@@ -97,8 +99,14 @@ public class PerfAgent {
                     copy[i] = args[i];
                 }
             }
-            System.out.printf("Perf, %d, %s, %s %s, %dns%s\n", depth.get(), Thread.currentThread().getName() + "-" + Thread.currentThread().getId(),
-                    origin, Arrays.toString(copy), took, (took > UNIT ? " " + (took / UNIT) + "ms" : ""));
+            String unit = "ns";
+            if (took > UNIT) {
+                took = took / UNIT;
+                unit = "ms";
+            }
+
+            System.out.printf("Perf, %d, %s, %s %s, %d%s\n", depth.get(), Thread.currentThread().getName() + "-" + Thread.currentThread().getId(),
+                    origin, Arrays.toString(copy), took, unit);
             depth.set(depth.get() - 1);
         }
 

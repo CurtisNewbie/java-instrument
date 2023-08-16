@@ -87,9 +87,6 @@ public class PerfAgent {
         @Advice.OnMethodExit
         static void exit(@Advice.Enter long time, @Advice.Origin String origin, @Advice.AllArguments() Object[] args) {
             long took = (System.nanoTime() - time);
-            if (took < 300 * UNIT) {
-                return;
-            }
 
             Object[] copy = new Object[args.length];
             for (int i = 0; i < args.length; i++) {

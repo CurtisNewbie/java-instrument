@@ -10,6 +10,8 @@ import java.lang.instrument.Instrumentation;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
@@ -26,8 +28,17 @@ public class PerfAgent {
     public static Advice timingAdvice = Advice.to(TimingAdvice.class);
 
     public static final boolean debug = false; // debug for byte-buddy
-    public static final Set<String> typeNames = new HashSet<>();
-    public static final Set<String> methodNames = new HashSet<>();
+    public static final Set<ElementMatcher.Junction<? super TypeDescription>> typeMatchers = new HashSet<>();
+    public static final Set<ElementMatcher.Junction<? super MethodDescription>> methodMatchers = new HashSet<>();
+
+    static {
+        typeMatchers.addAll(Arrays.asList(
+
+        ));
+        methodMatchers.addAll(Arrays.asList(
+
+        ));
+    }
 
     public static void premain(String arguments, Instrumentation instrumentation) {
         final AgentBuilder.Identified.Extendable t = new AgentBuilder.Default()
@@ -46,11 +57,9 @@ public class PerfAgent {
 
     public static ElementMatcher<? super MethodDescription> methodMatcher() {
         ElementMatcher.Junction<? super MethodDescription> tm = not(isAbstract());
-
-        for (String methodName : methodNames) {
-            tm = tm.and(nameStartsWith(methodName));
+        for (ElementMatcher.Junction<? super MethodDescription> m : methodMatchers) {
+            tm = tm.and(m);
         }
-
         return tm;
     }
 
@@ -61,30 +70,24 @@ public class PerfAgent {
                 .and(not(nameStartsWith("sun.reflect")))
                 .and(not(nameStartsWith("com.sun")));
 
-        for (String typeName : typeNames) {
-            tm = tm.and(nameStartsWith(typeName));
+        for (ElementMatcher.Junction<? super TypeDescription> m : typeMatchers) {
+            tm = tm.and(m);
         }
-
         return tm;
     }
 
     public static class TimingAdvice {
-        public static final String MAIN = "main";
         public static ThreadLocal<Integer> depth = ThreadLocal.withInitial(() -> 0);
         public static final long UNIT = 1_000_000L; // ms to ns
 
         @Advice.OnMethodEnter
         static long enter() {
-            if (!Thread.currentThread().getName().equalsIgnoreCase(MAIN)) return 0L;
-
             depth.set(depth.get() + 1);
             return System.nanoTime();
         }
 
         @Advice.OnMethodExit
         static void exit(@Advice.Enter long time, @Advice.Origin String origin, @Advice.AllArguments() Object[] args) {
-            if (!Thread.currentThread().getName().equalsIgnoreCase(MAIN)) return;
-
             long took = (System.nanoTime() - time);
             Object[] copy = new Object[args.length];
             for (int i = 0; i < args.length; i++) {
@@ -94,7 +97,8 @@ public class PerfAgent {
                     copy[i] = args[i];
                 }
             }
-            System.out.printf("Perf, %d, %s %s, %d, ns%s\n", depth.get(), origin, Arrays.toString(copy), took, (took > UNIT ? " " + (took / UNIT) + "ms" : ""));
+            System.out.printf("Perf, %d, %s, %s %s, %dns%s\n", depth.get(), Thread.currentThread().getName() + "-" + Thread.currentThread().getId(),
+                    origin, Arrays.toString(copy), took, (took > UNIT ? " " + (took / UNIT) + "ms" : ""));
             depth.set(depth.get() - 1);
         }
 
